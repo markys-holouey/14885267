@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Click Tycoon — Кликер на 100 миллионов</title>
+<style>
+  :root{
+    --bg:#0f0f1a; --card:#1a1a2e; --accent:#e94560; --accent2:#0f3460;
+    --gold:#f9b572; --green:#4ecca3; --text:#eee; --muted:#8892b0;
+    --radius:16px; --shadow:0 8px 32px rgba(0,0,0,.4);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);
+    color:var(--text);min-height:100vh;display:flex;align-items:center;
+    justify-content:center;padding:20px;
+  }
+  .hidden{display:none!important}
+  /* Auth */
+  .auth-box{
+    background:var(--card);border-radius:var(--radius);padding:40px;
+    max-width:420px;width:100%;box-shadow:var(--shadow);text-align:center;
+  }
+  .auth-box h1{font-size:28px;margin-bottom:8px;color:var(--accent)}
+  .auth-box p{color:var(--muted);margin-bottom:24px;font-size:14px}
+  .auth-box input{
+    width:100%;padding:14px 18px;border-radius:10px;border:2px solid
+    var(--accent2);background:var(--bg);color:var(--text);font-size:16px;
+    margin-bottom:14px;letter-spacing:2px;text-align:center;
+  }
+  .auth-box input:focus{outline:none;border-color:var(--accent)}
+  .btn{
+    padding:14px 28px;border-radius:10px;border:none;cursor:pointer;
+    font-size:16px;font-weight:700;transition:.2s;width:100%;
+  }
+  .btn-primary{background:var(--accent);color:#fff}
+  .btn-primary:hover{filter:brightness(1.15);transform:translateY(-2px)}
+  .btn-secondary{background:var(--accent2);color:var(--text);margin-top:10px}
+  .btn-secondary:hover{filter:brightness(1.25)}
+  .code-display{
+    background:var(--bg);border:2px dashed var(--green);border-radius:10px;
+    padding:20px;margin:16px 0;font-size:28px;font-weight:700;letter-spacing:6px;
+    color:var(--green);user-select:all;
+  }
+  .warn{color:var(--gold);font-size:13px;margin-top:12px}
+  /* Game */
+  .game-wrapper{max-width:900px;width:100%}
+  .topbar{
+    display:flex;justify-content:space-between;align-items:center;
+    background:var(--card);border-radius:var(--radius);padding:16px 24px;
+    margin-bottom:20px;box-shadow:var(--shadow);flex-wrap:wrap;gap:12px;
+  }
+  .topbar .acc-info{font-size:14px;color:var(--muted)}
+  .topbar .acc-info b{color:var(--green)}
+  .btn-logout{
+    background:none;border:1px solid var(--accent2);color:var(--muted);
+    padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;transition:.2s;
+  }
+  .btn-logout:hover{border-color:var(--accent);color:var(--accent)}
+  .stats-row{
+    display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;
+  }
+  .stat-card{
+    flex:1;min-width:140px;background:var(--card);border-radius:12px;
+    padding:16px 20px;box-shadow:var(--shadow);text-align:center;
+  }
+  .stat-card .label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+  .stat-card .value{font-size:24px;font-weight:700;margin-top:4px}
+  .stat-card .value.gold{color:var(--gold)}
+  .stat-card .value.green{color:var(--green)}
+  .main-area{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  @media(max-width:680px){.main-area{grid-template-columns:1fr}}
+  .panel{
+    background:var(--card);border-radius:var(--radius);padding:24px;
+    box-shadow:var(--shadow);
+  }
+  .panel h2{font-size:18px;margin-bottom:16px;color:var(--accent)}
+  /* Clicker */
+  .click-area{display:flex;flex-direction:column;align-items:center;gap:20px}
+  .click-btn{
+    width:200px;height:200px;border-radius:50%;border:none;cursor:pointer;
+    background:radial-gradient(circle,var(--accent) 0%,#c0392b 70%);
+    color:#fff;font-size:22px;font-weight:700;box-shadow:0 0 40px rgba(233,69,96,.5);
+    transition:transform .05s,box-shadow .2s;user-select:none;
+    display:flex;align-items:center;justify-content:center;flex-direction:column;
+  }
+  .click-btn:active{transform:scale(.93);box-shadow:0 0 60px rgba(233,69,96,.8)}
+  .click-btn .cpc-text{font-size:14px;opacity:.8;margin-top:4px}
+  .progress-wrap{width:100%}
+  .progress-label{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-bottom:6px}
+  .progress-bar{height:18px;background:var(--bg);border-radius:9px;overflow:hidden;border:1px solid var(--accent2)}
+  .progress-fill{
+    height:100%;background:linear-gradient(90deg,var(--green),var(--gold));
+    border-radius:9px;transition:width .3s;width:0%;
+  }
+  .floating{position:absolute;pointer-events:none;font-weight:700;color:var(--gold);
+    animation:floatUp 1s ease-out forwards;font-size:20px}
+  @keyframes floatUp{
+    0%{opacity:1;transform:translateY(0)}
+    100%{opacity:0;transform:translateY(-60px)}
+  }
+  /* Shop */
+  .shop-item{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px;border-radius:10px;margin-bottom:10px;background:var(--bg);
+    border:1px solid var(--accent2);transition:.2s;
+  }
+  .shop-item:hover{border-color:var(--accent)}
+  .shop-item .info .name{font-weight:700;font-size:15px}
+  .shop-item .info .desc{font-size:12px;color:var(--muted);margin-top:2px}
+  .shop-item .info .owned{font-size:12px;color:var(--green);margin-top:2px}
+  .buy-btn{
+    padding:10px 20px;border-radius:8px;border:none;cursor:pointer;
+    font-weight:700;font-size:14px;transition:.2s;white-space:nowrap;
+  }
+  .buy-btn:disabled{opacity:.4;cursor:not-allowed}
+  .buy-btn:not(:disabled){background:var(--green);color:var(--bg)}
+  .buy-btn:not(:disabled):hover{filter:brightness(1.15)}
+  .auto-section{margin-top:16px;padding-top:16px;border-top:1px solid var(--accent2)}
+  /* Victory */
+  .victory-overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;
+    align-items:center;justify-content:center;z-index:100;flex-direction:column;gap:20px;
+  }
+  .victory-overlay h1{font-size:48px;color:var(--gold);text-shadow:0 0 30px var(--gold)}
+  .victory-overlay p{font-size:18px;color:var(--text)}
+  .toast{
+    position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+    background:var(--accent);color:#fff;padding:12px 24px;border-radius:10px;
+    font-size:14px;z-index:200;animation:toastIn .3s,toastOut .3s 2.7s forwards;
+  }
+  @keyframes toastIn{from{opacity:0;transform:translate(-50%,20px)}to{opacity:1;transform:translate(-50%,0)}}
+  @keyframes toastOut{to{opacity:0;transform:translate(-50%,20px)}}
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div id="authScreen">
+  <div class="auth-box">
+    <h1>Click Tycoon</h1>
+    <p>Накопи 100 000 000 кликов!</p>
+    <input id="codeInput" type="text" maxlength="10" placeholder="Введите код аккаунта" autocomplete="off">
+    <button class="btn btn-primary" onclick="login()">Войти</button>
+    <button class="btn btn-secondary" onclick="createAccount()">Создать аккаунт</button>
+    <div id="codeResult" class="hidden">
+      <div class="code-display" id="newCode"></div>
+      <p class="warn">⚠️ Сохраните этот код! Без него войти нельзя.</p>
+      <button class="btn btn-primary" onclick="enterWithNewCode()">Войти с этим кодом</button>
+    </div>
+  </div>
+</div>
+
+<!-- GAME SCREEN -->
+<div id="gameScreen" class="hidden game-wrapper">
+  <div class="topbar">
+    <div class="acc-info">Аккаунт: <b id="accCodeDisplay"></b></div>
+    <button class="btn-logout" onclick="logout()">Выйти</button>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="label">Клики</div>
+      <div class="value gold" id="clicksDisplay">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Кликов за клик</div>
+      <div class="value green" id="cpcDisplay">1</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Авто/сек</div>
+      <div class="value green" id="cpsDisplay">0</div>
+    </div>
+  </div>
+
+  <div class="main-area">
+    <!-- Clicker -->
+    <div class="panel">
+      <h2>Кликай!</h2>
+      <div class="click-area">
+        <button class="click-btn" onclick="doClick(event)">
+          <span>КЛИК</span>
+          <span class="cpc-text">+<span id="cpcInline">1</span> за клик</span>
+        </button>
+        <div class="progress-wrap">
+          <div class="progress-label">
+            <span>Прогресс к цели</span>
+            <span id="progressText">0 / 100M</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Shop -->
+    <div class="panel">
+      <h2>Магазин улучшений</h2>
+      <div id="shopList"></div>
+      <div class="auto-section">
+        <h2 style="font-size:16px;margin-bottom:12px">Автокликеры</h2>
+        <div id="autoShopList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Victory overlay -->
+<div id="victoryOverlay" class="hidden victory-overlay">
+  <h1>🏆 ПОБЕДА!</h1>
+  <p>Вы набрали 100 000 000 кликов!</p>
+  <button class="btn btn-primary" style="max-width:200px" onclick="document.getElementById('victoryOverlay').classList.add('hidden')">Круто!</button>
+</div>
+
+<script>
+// ===== DATA =====
+const UPGRADES = [
+  {id:'cpc1', name:'Усиление клика x2', desc:'Удваивает клики за клик', baseCost:50,    costMult:1.6, effect:'cpc', power:1, max:50},
+  {id:'cpc2', name:'Турбо-клик x5',    desc:'Умножает клики за клик на 5', baseCost:5000,  costMult:2.2, effect:'cpc', power:4, max:30},
+  {id:'cpc3', name:'Мега-клик x10',   desc:'Умножает клики за клик на 10', baseCost:250000,costMult:2.8, effect:'cpc', power:9, max:20},
+];
+const AUTO = [
+  {id:'a1', name:'Автокликер',      desc:'+1 клик/сек',  baseCost:100,     costMult:1.5, cps:1,  max:100},
+  {id:'a2', name:'Ферма кликов',     desc:'+10 клик/сек', baseCost:5000,    costMult:1.7, cps:10, max:50},
+  {id:'a3', name:'Фабрика кликов',  desc:'+100 клик/сек',baseCost:250000,  costMult:1.8, cps:100,max:30},
+  {id:'a4', name:'Квантовый кликер',desc:'+1000 клик/сек',baseCost:10000000,costMult:2.0, cps:1000,max:20},
+];
+const GOAL = 100000000;
+
+// ===== STORAGE =====
+const STORE_KEY = 'clickTycoonAccounts';
+
+function loadAll(){ try{ return JSON.parse(localStorage.getItem(STORE_KEY))||{}; }catch(e){ return {}; } }
+function saveAll(data){ localStorage.setItem(STORE_KEY, JSON.stringify(data)); }
+
+function genCode(){
+  let c; do{ c = Math.floor(Math.random()*9000000000+1000000000).toString(); }
+  while(loadAll()[c]);
+  return c;
+}
+
+function defaultAccount(){
+  return { clicks:0, cpc:1, upgrades:{}, auto:{}, lastSeen:Date.now() };
+}
+
+// ===== STATE =====
+let currentUser = null;   // 10-digit code string
+let account = null;       // account object
+
+// ===== AUTH =====
+function login(){
+  const code = document.getElementById('codeInput').value.trim();
+  const all = loadAll();
+  if(all[code]){
+    currentUser = code;
+    account = all[code];
+    // offline auto-click income
+    applyOfflineIncome();
+    startGame();
+  } else {
+    showToast('Аккаунт не найден. Создайте новый.');
+  }
+}
+
+function createAccount(){
+  const code = genCode();
+  const all = loadAll();
+  all[code] = defaultAccount();
+  saveAll(all);
+  document.getElementById('newCode').textContent = code;
+  document.getElementById('codeResult').classList.remove('hidden');
+  document.getElementById('codeInput').value = code;
+  showToast('Аккаунт создан!');
+}
+
+function enterWithNewCode(){
+  const code = document.getElementById('newCode').textContent;
+  currentUser = code;
+  account = loadAll()[code];
+  startGame();
+}
+
+function logout(){
+  saveAccount();
+  currentUser = null; account = null;
+  document.getElementById('gameScreen').classList.add('hidden');
+  document.getElementById('authScreen').classList.remove('hidden');
+  document.getElementById('codeInput').value = '';
+  document.getElementById('codeResult').classList.add('hidden');
+}
+
+// ===== OFFLINE INCOME =====
+function applyOfflineIncome(){
+  const now = Date.now();
+  const elapsed = Math.floor((now - (account.lastSeen||now)) / 1000);
+  if(elapsed < 5) return;
+  const cps = computeCPS();
+  if(cps <= 0) return;
+  const earned = Math.floor(cps * elapsed);
+  if(earned > 0){
+    account.clicks += earned;
+    showToast(`Пока вас не было: +${formatNum(earned)} кликов (${formatTime(elapsed)})`);
+  }
+}
+
+function formatTime(s){
+  if(s<60) return s+'с';
+  if(s<3600) return Math.floor(s/60)+'м';
+  if(s<86400) return Math.floor(s/3600)+'ч';
+  return Math.floor(s/86400)+'д';
+}
+
+// ===== GAME =====
+function startGame(){
+  document.getElementById('authScreen').classList.add('hidden');
+  document.getElementById('gameScreen').classList.remove('hidden');
+  document.getElementById('accCodeDisplay').textContent = currentUser;
+  renderShop();
+  updateUI();
+  startAutoLoop();
+}
+
+function saveAccount(){
+  if(!currentUser) return;
+  const all = loadAll();
+  account.lastSeen = Date.now();
+  all[currentUser] = account;
+  saveAll(all);
+}
+
+function doClick(e){
+  const gain = account.cpc;
+  account.clicks += gain;
+  // floating text
+  if(e){
+    const f = document.createElement('div');
+    f.className = 'floating';
+    f.textContent = '+'+formatNum(gain);
+    f.style.left = (e.clientX-20)+'px';
+    f.style.top = (e.clientY-20)+'px';
+    document.body.appendChild(f);
+    setTimeout(()=>f.remove(),1000);
+  }
+  updateUI();
+  checkVictory();
+}
+
+function computeCPC(){
+  let cpc = 1;
+  UPGRADES.forEach(u=>{
+    const owned = account.upgrades[u.id]||0;
+    for(let i=0;i<owned;i++) cpc += u.power;
+  });
+  return cpc;
+}
+
+function computeCPS(){
+  let cps = 0;
+  AUTO.forEach(a=>{
+    const owned = account.auto[a.id]||0;
+    cps += owned * a.cps;
+  });
+  return cps;
+}
+
+function upgradeCost(u){
+  const owned = account.upgrades[u.id]||0;
+  return Math.floor(u.baseCost * Math.pow(u.costMult, owned));
+}
+function autoCost(a){
+  const owned = account.auto[a.id]||0;
+  return Math.floor(a.baseCost * Math.pow(a.costMult, owned));
+}
+
+function buyUpgrade(id){
+  const u = UPGRADES.find(x=>x.id===id);
+  const owned = account.upgrades[id]||0;
+  if(owned >= u.max){ showToast('Максимум достигнут'); return; }
+  const cost = upgradeCost(u);
+  if(account.clicks < cost){ showToast('Недостаточно кликов'); return; }
+  account.clicks -= cost;
+  account.upgrades[id] = owned + 1;
+  account.cpc = computeCPC();
+  saveAccount();
+  renderShop();
+  updateUI();
+}
+
+function buyAuto(id){
+  const a = AUTO.find(x=>x.id===id);
+  const owned = account.auto[id]||0;
+  if(owned >= a.max){ showToast('Максимум достигнут'); return; }
+  const cost = autoCost(a);
+  if(account.clicks < cost){ showToast('Недостаточно кликов'); return; }
+  account.clicks -= cost;
+  account.auto[id] = owned + 1;
+  saveAccount();
+  renderShop();
+  updateUI();
+}
+
+// ===== AUTO LOOP =====
+let autoInterval = null;
+function startAutoLoop(){
+  if(autoInterval) clearInterval(autoInterval);
+  autoInterval = setInterval(()=>{
+    const cps = computeCPS();
+    if(cps > 0){
+      account.clicks += cps;
+      updateUI();
+      checkVictory();
+    }
+  },1000);
+  // save every 5 sec
+  setInterval(saveAccount, 5000);
+  // save on tab close
+  window.addEventListener('beforeunload', saveAccount);
+}
+
+// ===== RENDER =====
+function renderShop(){
+  const sl = document.getElementById('shopList');
+  sl.innerHTML = UPGRADES.map(u=>{
+    const owned = account.upgrades[u.id]||0;
+    const cost = upgradeCost(u);
+    const maxed = owned >= u.max;
+    const canBuy = account.clicks >= cost && !maxed;
+    return `<div class="shop-item">
+      <div class="info">
+        <div class="name">${u.name}</div>
+        <div class="desc">${u.desc}</div>
+        <div class="owned">Куплено: ${owned}/${u.max}</div>
+      </div>
+      <button class="buy-btn" ${canBuy?'':'disabled'} onclick="buyUpgrade('${u.id}')">
+        ${maxed?'MAX':formatNum(cost)}
+      </button>
+    </div>`;
+  }).join('');
+
+  const al = document.getElementById('autoShopList');
+  al.innerHTML = AUTO.map(a=>{
+    const owned = account.auto[a.id]||0;
+    const cost = autoCost(a);
+    const maxed = owned >= a.max;
+    const canBuy = account.clicks >= cost && !maxed;
+    return `<div class="shop-item">
+      <div class="info">
+        <div class="name">${a.name}</div>
+        <div class="desc">${a.desc}</div>
+        <div class="owned">Куплено: ${owned}/${a.max}</div>
+      </div>
+      <button class="buy-btn" ${canBuy?'':'disabled'} onclick="buyAuto('${a.id}')">
+        ${maxed?'MAX':formatNum(cost)}
+      </button>
+    </div>`;
+  }).join('');
+}
+
+function updateUI(){
+  document.getElementById('clicksDisplay').textContent = formatNum(account.clicks);
+  document.getElementById('cpcDisplay').textContent = formatNum(account.cpc);
+  document.getElementById('cpcInline').textContent = formatNum(account.cpc);
+  const cps = computeCPS();
+  document.getElementById('cpsDisplay').textContent = formatNum(cps);
+  const pct = Math.min(100, (account.clicks / GOAL) * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressText').textContent = formatNum(account.clicks) + ' / 100M';
+  // refresh shop button states
+  document.querySelectorAll('#shopList .buy-btn').forEach((btn,i)=>{
+    const u = UPGRADES[i]; if(!u) return;
+    const owned = account.upgrades[u.id]||0;
+    if(owned >= u.max){ btn.textContent='MAX'; btn.disabled=true; return; }
+    const cost = upgradeCost(u);
+    btn.textContent = formatNum(cost);
+    btn.disabled = account.clicks < cost;
+  });
+  document.querySelectorAll('#autoShopList .buy-btn').forEach((btn,i)=>{
+    const a = AUTO[i]; if(!a) return;
+    const owned = account.auto[a.id]||0;
+    if(owned >= a.max){ btn.textContent='MAX'; btn.disabled=true; return; }
+    const cost = autoCost(a);
+    btn.textContent = formatNum(cost);
+    btn.disabled = account.clicks < cost;
+  });
+}
+
+function checkVictory(){
+  if(account.clicks >= GOAL && document.getElementById('victoryOverlay').classList.contains('hidden')){
+    document.getElementById('victoryOverlay').classList.remove('hidden');
+  }
+}
+
+function formatNum(n){
+  n = Math.floor(n);
+  if(n < 1000) return n.toString();
+  if(n < 1000000) return (n/1000).toFixed(n<10000?1:0).replace('.0','')+'K';
+  if(n < 1000000000) return (n/1000000).toFixed(n<10000000?1:0).replace('.0','')+'M';
+  return (n/1000000000).toFixed(1)+'B';
+}
+
+function showToast(msg){
+  const t = document.createElement('div');
+  t.className = 'toast'; t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),3000);
+}
+</script>
+</body>
+</html>
